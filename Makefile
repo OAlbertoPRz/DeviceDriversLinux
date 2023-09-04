@@ -1,7 +1,7 @@
 
 obj-m:= example_devicedriver.o
 
-KDIR := /lib/modules/5.10.0-22-amd64/build
+KDIR := /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
 
 default:
