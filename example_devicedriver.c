@@ -8,9 +8,16 @@
 #include <linux/slab.h>					// kmalloc() function
 #include <linux/uaccess.h>				// copy_from/to_user() functions
 #include <linux/ioctl.h>
-
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 
 #define MEM_SIZE 1024
+
+
+// Procfs
+char chr_array[40]="A text for my Example\n";
+static int len = 1;
+
 
 
 // Define de ioctl code
@@ -25,7 +32,7 @@ static struct class *dev_class;
 static struct cdev my_cdev;		
 uint8_t *kernel_buffer;
 
-
+/*     											FUNCTIONS									*/
 static int __init chr_driver_init(void);
 static void __exit chr_driver_exit(void);
 static int my_open(struct inode *inode, struct file *file);
@@ -34,8 +41,41 @@ static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *
 static ssize_t my_write(struct file *filp, const char *buf, size_t len, loff_t *off);
 static long chr_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
+/*
+ 										* PROCFS FUNCTIONS *		
+ */
+static ssize_t read_proc(struct file *file, char __user *user, size_t size, loff_t *off);
+static ssize_t write_proc(struct file *file, const char __user *user, size_t size, loff_t *off);
 
 
+
+
+/************************************************************************************ procfs *****************************************************************************************************************/
+static char data_buffer[MEM_SIZE];
+
+
+static const struct proc_ops ldd_proc_fops = {
+	.proc_read = read_proc,
+	.proc_write = write_proc,
+};
+
+
+static ssize_t read_proc(struct file *file, char __user *user, size_t size, loff_t *off){
+	copy_to_user(user, "Hello!\n",7);
+	return 7;
+
+}
+
+
+static ssize_t write_proc(struct file *file, const char __user *user, size_t size, loff_t *off){
+	memset(data_buffer,0x0,sizeof(data_buffer));
+	if(size > MEM_SIZE)
+		size = MEM_SIZE;
+	copy_from_user(data_buffer, user, size);
+	printk("You said '%s'!\n", data_buffer);
+	return size;
+}
+/************************************************************************************ char device driver functions *****************************************************************************************/
 static struct file_operations fops = 
 {
 	.owner = THIS_MODULE,
@@ -45,6 +85,7 @@ static struct file_operations fops =
 	.unlocked_ioctl = chr_ioctl,
 	.release = my_release,
 };
+
 
 
 static int my_open(struct inode *inode, struct file *file)
@@ -96,6 +137,10 @@ static long chr_ioctl(struct file *file, unsigned int cmd, unsigned long arg){
 	}
 	return 0;
 }
+
+
+
+
 static int __init chr_driver_init(void)
 {
 	/* Allocation of memory */
@@ -128,6 +173,16 @@ static int __init chr_driver_init(void)
 		printk(KERN_INFO"Unable to allocate the device...\n");
 		goto r_device;
 	}
+
+
+	/**************************************************************************************  Creating the Proc entry **************************************************************************************/
+	int ldd_proc = proc_create("lll-proc", 066, NULL, &ldd_proc_fops);
+	if (ldd_proc == NULL){
+		printk(KERN_INFO"Cannot create lll_proc");
+		return -1;
+	}
+		
+
 	printk(KERN_INFO"Device driver inserted...\nDone properly...\n");
 	return 0;
 
@@ -148,6 +203,7 @@ static void __exit chr_driver_exit(void)
 	cdev_del(&my_cdev);
 	unregister_chrdev_region(dev,1);
 	printk(KERN_INFO"Device driver was removed succesfully...\n");
+
 }
 
 

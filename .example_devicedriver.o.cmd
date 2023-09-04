@@ -922,6 +922,9 @@ deps_/home/oaperez/Documents/ldd/example_devicedriver.o := \
     $(wildcard include/config/kasan/vmalloc.h) \
     $(wildcard include/config/kasan/generic.h) \
     $(wildcard include/config/kasan/inline.h) \
+  /usr/src/linux-headers-5.10.0-25-common/include/linux/proc_fs.h \
+    $(wildcard include/config/proc/pid/arch/status.h) \
+  /usr/src/linux-headers-5.10.0-25-common/include/linux/seq_file.h \
 
 /home/oaperez/Documents/ldd/example_devicedriver.o: $(deps_/home/oaperez/Documents/ldd/example_devicedriver.o)
 
