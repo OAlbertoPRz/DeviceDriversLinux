@@ -12,5 +12,5 @@ install:
 	$(MAKE) -C $(KDIR) M=$(PWD) module_install
 
 clean:
-	$(MAKE) -C $(KDIR) M=$(PWD) clear
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
 
