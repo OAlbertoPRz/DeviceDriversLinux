@@ -1,2 +1,2 @@
-/home/oaperez/Documents/ldd/example_devicedriver.o
+/home/oaperez/Documents/ldd/DeviceDriversLinux/example_driver/example_devicedriver.o
 

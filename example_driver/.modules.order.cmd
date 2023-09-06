@@ -1,0 +1,1 @@
+cmd_/home/oaperez/Documents/ldd/DeviceDriversLinux/example_driver/modules.order := {   echo /home/oaperez/Documents/ldd/DeviceDriversLinux/example_driver/example_devicedriver.ko; :; } | awk '!x[$$0]++' - > /home/oaperez/Documents/ldd/DeviceDriversLinux/example_driver/modules.order

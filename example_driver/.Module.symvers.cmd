@@ -1,0 +1,1 @@
+cmd_/home/oaperez/Documents/ldd/DeviceDriversLinux/example_driver/Module.symvers := sed 's/ko$$/o/' /home/oaperez/Documents/ldd/DeviceDriversLinux/example_driver/modules.order | scripts/mod/modpost -m    -o /home/oaperez/Documents/ldd/DeviceDriversLinux/example_driver/Module.symvers -e -i Module.symvers   -T -

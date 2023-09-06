@@ -144,7 +144,7 @@ static long chr_ioctl(struct file *file, unsigned int cmd, unsigned long arg){
 static int __init chr_driver_init(void)
 {
 	/* Allocation of memory */
-	if((alloc_chrdev_region(&dev,0,1,"my_Dev")) < 0){
+	if((alloc_chrdev_region(&dev,0,1,"My_device")) < 0){
 		printk(KERN_INFO"Cannot allocate the major number..\n");
 		return -1;
 	}
