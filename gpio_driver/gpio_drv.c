@@ -13,7 +13,8 @@ MODULE_DESCRIPTION("Drivers implemented to test the GPIOs of the Raspberry pi 4"
 
 #define DRIVER_NAME		"chrdrv_gpio"
 #define DRIVER_CLASS	"class_gpio"
-#define GPIO_TESTBIT	17
+#define GPIO_INPUT		17
+#define GPIO_OUTPUT		4
 #define MEM_SIZE		1024
 
 
@@ -68,13 +69,43 @@ static ssize_t write_gpiodrv(struct file *filp, const char __user *user_buffer, 
 	return size;
 }
 
-
-
-
 /***************************************************************************************************************************************************************************************************************
  										* 	@TODO:GPIO DEFINITIONS	*							
 ****************************************************************************************************************************************************************************************************************/
+static int setGPIOInputPin(void){
+	/* GPIO 17 init */
+	if(gpio_request(GPIO_INPUT, "rpi-gpio-17")) {
+		printk("Can not allocate GPIO 17\n");
+		gpio_free(GPIO_INPUT);
+		return 1;
+	}
 
+	/* Set GPIO 17 direction */
+	if(gpio_direction_input(GPIO_INPUT)) {
+		printk("Can not set GPIO 17 to input!\n");
+		gpio_free(GPIO_INPUT);
+		return 1;
+	}
+	return 0;
+}
+
+
+static int setGPIOOutputPin(void){
+	/* GPIO 4 init */
+	if(gpio_request(4, "rpi-gpio-4")) {
+		printk("Can not allocate GPIO 4\n");
+		gpio_free(4);
+		return 1;
+	}
+
+	/* Set GPIO 4 direction */
+	if(gpio_direction_output(4, 0)) {
+		printk("Can not set GPIO 4 to output!\n");
+		gpio_free(4);
+		return 1;
+	}
+	return 0;
+}	
 
 /***************************************************************************************************************************************************************************************************************
  										* 	@MODULE INIT	*							
@@ -109,6 +140,14 @@ static int __init gpio_init(void){
 		printk(KERN_INFO"Registering of the device in the kernel have failed\n");
 		goto AddError;
 	}
+
+
+	// Set the GPIO Input Pin
+	if(setGPIOInputPin())
+		goto AddError;
+	
+	if(setGPIOOutputPin())
+		goto AddError;
 
 	return 0;
 	
