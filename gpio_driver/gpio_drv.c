@@ -11,18 +11,20 @@ MODULE_DESCRIPTION("Drivers implemented to test the GPIOs of the Raspberry pi 4"
  										* 	@VARIABLES	*							
 ****************************************************************************************************************************************************************************************************************/
 
-#define DRIVER_NAME	"chrdrv_gpio"
+#define DRIVER_NAME		"chrdrv_gpio"
 #define DRIVER_CLASS	"class_gpio"
 #define GPIO_TESTBIT	17
+#define MEM_SIZE		1024
+
 
 // Structures
 dev_t devmm;
 static int open_gpiodrv(struct inode *device_file, struct file *instance);
 static int release_gpiodrv(struct inode *device_file, struct file *instance);
-static ssize_t read_gpiodrv(struct file *file, char *user_buffer, size_t count, loff_t *offs);
-static ssize_t write_gpiodrv(char *user_buffer, struct file *file, size_t count, lofft_t *offs);
+static ssize_t read_gpiodrv(struct file *filp, char __user *user_buffer, size_t size, loff_t *off);
+static ssize_t write_gpiodrv(struct file *filp, const char __user *user_buffer, size_t size, loff_t *off);
 
-static struct file_operations fops{
+static struct file_operations fops = {
 	.owner = THIS_MODULE,
 	.open = open_gpiodrv,
 	.release = release_gpiodrv,
@@ -30,8 +32,11 @@ static struct file_operations fops{
 	.write = write_gpiodrv,	
 };
 
-static struct cdev chrdev;
-static struct class *class;
+static struct cdev 	chrdev;
+static struct class *gpio_class;
+
+// buffer
+uint8_t *kernel_buffer;
 
 /***************************************************************************************************************************************************************************************************************
  										* 	@FILE OPERATION FUNCTIONS	*							
@@ -48,31 +53,19 @@ static int release_gpiodrv(struct inode *device_file, struct file *instance){
 }
 
 
-static ssize_t read_gpiodrv(struct file *file, char *user_buffer, size_t count, loff_t *offs){
-	char tmp[3] = " \n";
-	int to_copy = min(count, sizeof(tmp)); 							//Detects the amount of data to read
-	printk(KERN_INFO"Value of the button is: &d\n", gpio_get_value(GPIO_TESTBIT));
-	tmp[0] = gpio_get_value(GPIO_TESTBIT) + '0';
-
-	/* Copy data to user */
-	int not_copied = copy_to_user(user_buffer, &tmp, to_copy);
-
-	/* Calculate data */
-	int delta = to_copy - not_copy;
-	return delta;
+static ssize_t read_gpiodrv(struct file *filp, char __user *user_buffer, size_t size, loff_t *off){
+	if(copy_to_user(user_buffer,kernel_buffer,MEM_SIZE)) 
+		printk(KERN_INFO"Couldn't read properly...\n");
+	printk(KERN_INFO "Data read: DONE...\n");
+	return MEM_SIZE;
 }
 
 
-static ssize_t write_gpiodrv(char *user_buffer, struct file *file, size_t count, lofft_t *offs){
-	char value;
-	int to_copy = min(count, sizeof(value));						// Detecting the amount of data to write
-	
-	/* Copy data from user */
-	int not_copy = copy_from_user(&value, user_buffer, to_copy);
-
-	/* Calculating the data */
-	int delta = to_copy - not_copy;
-	return delta;
+static ssize_t write_gpiodrv(struct file *filp, const char __user *user_buffer, size_t size, loff_t *off){
+	if(copy_from_user(kernel_buffer, user_buffer, size))
+		printk(KERN_INFO"Couldn't write properly...\n");
+	printk(KERN_INFO "Data was written succesfully...\n");
+	return size;
 }
 
 
@@ -87,9 +80,46 @@ static ssize_t write_gpiodrv(char *user_buffer, struct file *file, size_t count,
  										* 	@MODULE INIT	*							
 ****************************************************************************************************************************************************************************************************************/
 static int __init gpio_init(void){
+	printk(KERN_INFO"Module inserted...\n");
+	// Allocate the char device in the memory
+	if(alloc_chrdev_region(&devmm, 0, 1, DRIVER_NAME) < 0){
+		printk(KERN_INFO"Allocating the char device\n");
+		return -1;
+	}
 	
+	printk("Read-Write - Device Major: %d, Device Minor: %d was registered\n", MAJOR(devmm), MINOR(devmm));
+	
+	// Create device class
+	if((gpio_class=class_create(THIS_MODULE, DRIVER_CLASS)) == NULL){
+		printk(KERN_INFO"Device Class can not be created\n");
+		goto ClassError;
+	}
+
+	// Create and Assign the device into the class
+	if(device_create(gpio_class, NULL, devmm, NULL, DRIVER_NAME)==NULL){
+		printk("Can not create device file\n");
+		goto FileError;
+	}
+
+	// Initialize the device
+	cdev_init(&chrdev, &fops);
+
+	// Register device to kernel
+	if(cdev_add(&chrdev, devmm, 1)==-1){
+		printk(KERN_INFO"Registering of the device in the kernel have failed\n");
+		goto AddError;
+	}
 
 	return 0;
+	
+	AddError:
+		device_destroy(gpio_class, devmm);
+	FileError:
+		class_destroy(gpio_class);
+	ClassError:
+		unregister_chrdev_region(devmm, 1);
+		return -1;
+
 }
 
 
@@ -97,8 +127,11 @@ static int __init gpio_init(void){
  										* 	@MODULE EXIT	*							
 ****************************************************************************************************************************************************************************************************************/
 static void __exit gpio_close(void){
-
-
+	cdev_del(&chrdev);
+	device_destroy(gpio_class, devmm);
+	class_destroy(gpio_class);
+	unregister_chrdev_region(devmm,1);
+	printk(KERN_INFO"Removing the module\n");
 }
 
 

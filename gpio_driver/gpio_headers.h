@@ -1,10 +1,10 @@
-#ifndef	HEADERS_GPIO.H
-#define HEADERS_GPIO.H
+#ifndef	HEADERS_GPIO_H
+#define HEADERS_GPIO_H
 
 
 #include <linux/kernel.h>
 #include <linux/init.h>
-#include <linux/modules.h>
+#include <linux/module.h>
 #include <linux/uaccess.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
